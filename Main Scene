@@ -1,0 +1,346 @@
+import Foundation
+
+class MainScene: CCNode, CCPhysicsCollisionDelegate {
+    
+    
+    var sinceTouch : CCTime = 0
+    var scrollSpeed : CGFloat = 0
+    
+    weak var gamePhysicsNode : CCPhysicsNode!
+    
+    weak var character: Character!
+    
+    weak var test1 : CCSprite!
+    weak var test2 : CCSprite!
+    weak var test3 : CCSprite!
+    weak var test4 : CCSprite!
+    
+    weak var testNode: CCNode!
+    
+    var tests = [CCSprite]()
+    
+    weak var scrollNode: CCNode!
+    
+    var obstacles : [CCNode] = []
+    let firstObstaclePosition : CGFloat    = 200
+    let distanceBetweenObstacles : CGFloat = 200
+    weak var obstacle1: Obstacle!
+    
+    weak var buttonRight: Button!
+    
+    var attackPressed = false
+    var attackFrame = 0
+    
+    //var and scroll objects on the background : mountain, bush, clouds, birds
+    
+    //clouds
+    weak var cloud1 : CCSprite!
+    weak var cloud2 : CCSprite!
+    weak var cloud3 : CCSprite!
+    weak var cloud4 : CCSprite!
+    weak var cloud5 : CCSprite!
+    weak var cloud6 : CCSprite!
+    weak var cloud7 : CCSprite!
+    
+    var clouds = [CCSprite]()
+    
+    weak var backNode: CCNode!
+    
+    //mountain
+    weak var mountain1 : CCSprite!
+    weak var mountain2 : CCSprite!
+    weak var mountain3 : CCSprite!
+    weak var mountain4 : CCSprite!
+    
+    var mountains = [CCSprite]()
+    
+    
+    //birds
+    weak var bird1 : CCSprite!
+    weak var bird2 : CCSprite!
+    
+    var birds = [CCSprite]()
+    
+    
+    //bush
+    weak var front1 : CCSprite!
+    weak var front2 : CCSprite!
+    weak var front3 : CCSprite!
+    weak var front4 : CCSprite!
+    weak var front5 : CCSprite!
+    
+    weak var bush1 : CCSprite!
+    weak var bush2 : CCSprite!
+    weak var bush3 : CCSprite!
+    weak var bush4 : CCSprite!
+    weak var bush5 : CCSprite!
+    
+    var bushes = [CCSprite]()
+    
+    weak var scoreLabel: CCLabelTTF!
+    
+    var life = 100 {
+        didSet {
+            scoreLabel.string = "\(life)"
+        }
+    }
+    
+    var gameOver = false
+    
+    func didLoadFromCCB() {
+        
+        userInteractionEnabled = true
+        
+        gamePhysicsNode.collisionDelegate = self
+        //gamePhysicsNode.debugDraw = true
+        
+        self.schedule("spawnNewObstacle", interval: 3.0)
+        
+        tests.append(test1)
+        test1.physicsBody.collisionGroup = []
+        test2.physicsBody.collisionGroup = []
+        test3.physicsBody.collisionGroup = []
+        test4.physicsBody.collisionGroup = []
+        tests.append(test2)
+        tests.append(test3)
+        tests.append(test4)
+        
+        
+        
+        clouds.append(cloud1)
+        clouds.append(cloud2)
+        clouds.append(cloud3)
+        clouds.append(cloud4)
+        clouds.append(cloud5)
+        clouds.append(cloud6)
+        clouds.append(cloud7)
+        
+        
+        mountains.append(mountain1)
+        mountains.append(mountain2)
+        mountains.append(mountain3)
+        mountains.append(mountain4)
+        //
+        //
+        birds.append(bird1)
+        birds.append(bird2)
+        //
+        //
+        bushes.append(bush1)
+        bushes.append(bush2)
+        bushes.append(bush3)
+        bushes.append(bush4)
+        bushes.append(bush5)
+        
+        
+        bushes.append(front1)
+        bushes.append(front2)
+        bushes.append(front3)
+        bushes.append(front4)
+        bushes.append(front5)
+        
+        
+        obstacles.append(obstacle1)
+    }
+    
+    
+    override func onEnter() {
+        super.onEnter()
+        buttonRight.mainScene = self
+        
+    }
+    
+    //colliding
+    func ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, character: Character!, obstacle: Obstacle!) -> ObjCBool {
+        println("ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, character: CCNode!, obstacle: Obstacle!)")
+        
+        if character.isAttacking {
+                    // Kill Obstacle
+        
+            var particle = CCBReader.load("ObstacleExplosion") as! CCParticleSystem
+            particle.autoRemoveOnFinish = true;
+            particle.position = obstacle.position
+            obstacle.removeFromParent()
+//CCParticleExplosion()
+            self.addChild(particle)
+            
+            //particle.position = obstacle.position
+            //particle.autoRemoveOnFinish = true;
+            
+            //let particle = CCBReader.load("ObstacleExplosion") as! CCParticleSystem
+//            
+//            let explosion = CCBReader.load("ObstacleExplosion") as! CCParticleSystem
+//            self.addChild(explosion)
+//            explosion.position = obstacle.position
+//            explosion.autoRemoveOnFinish = true;
+//            obstacle.removeFromParent()
+            
+            // create timeline , turn unvisible when finished
+            
+            // create CCAction
+            
+        
+            } else {
+                var particle = CCParticleExplosion()
+                self.addChild(particle)
+                particle.position = character.position
+                particle.autoRemoveOnFinish = true;
+        //
+//            let explosion = CCBReader.load("CharacterExplosion") as! CCParticleSystem
+//            self.addChild(explosion)
+//            explosion.autoRemoveOnFinish = true;
+//            explosion.position = character.position
+
+        
+            life--
+        }
+        
+            if life <= 45 {
+        
+                triggerGameOver()
+                
+            }
+        
+        return false
+    }
+    
+    
+    //update method
+    override func update(delta: CCTime) {
+        
+        testNode.position = ccp(testNode.position.x - scrollSpeed * CGFloat(delta), testNode.position.y)
+        
+        if attackPressed == true {
+            attackFrame++
+        }
+        if attackFrame > 12 {
+            attackPressed = false
+            attackFrame = 0
+        }
+        
+        for test in tests {
+            let testWorldPosition = testNode.convertToWorldSpace(test.position)
+            let testScreenPosition = convertToNodeSpace(testWorldPosition)
+            if testScreenPosition.x <= (-test.contentSize.width*2) {
+                test.position = ccp(test.position.x + test.contentSize.width + test.contentSize.width*4, test.position.y)
+                
+                //test.position = ccp(test.position.x + test.contentSize.width * 4, test.position.y)
+            }
+        }
+        
+        //spawning endless obstacles
+        for obstacle in obstacles.reverse() {
+            obstacle.position = ccp(obstacle.position.x - 40 * CGFloat(delta), obstacle.position.y)
+        }
+        
+        //ALL OBJECTS scroll
+        
+        backNode.position = ccp(backNode.position.x - scrollSpeed * CGFloat(delta), backNode.position.y)
+        //println(backNode.position)
+        
+        // Cloud Loop
+        for cloud in clouds {
+            let cloudWorldPosition = backNode.convertToWorldSpace(cloud.position)
+            let cloudScreenPosition = convertToNodeSpace(cloudWorldPosition)
+            
+            // Has cloud left the screen?
+            if cloudScreenPosition.x <= (-cloud.contentSize.width*2) {
+                
+                // If so reset cloud to just outside right hand side of screen
+                cloud.position = ccp(cloud.position.x + self.contentSizeInPoints.width + cloud.contentSize.width*4, cloud.position.y)
+            }
+            
+        }
+        
+   
+        //loop mountains OK
+        for mountain in mountains {
+            let mountainWorldPosition = backNode.convertToWorldSpace(mountain.position)
+            let mountainScreenPosition = convertToNodeSpace(mountainWorldPosition)
+            if mountainScreenPosition.x <= (-mountain.contentSize.width*2) {
+                mountain.position = ccp(mountain.position.x + mountain.contentSize.width * 4, mountain.position.y)
+            }
+        }
+        
+        
+        //loop bushes OK
+        for bush in bushes {
+            let bushWorldPosition = backNode.convertToWorldSpace(bush.position)
+            let bushScreenPosition = convertToNodeSpace(bushWorldPosition)
+            if bushScreenPosition.x <= (-bush.contentSize.width*2) {
+                bush.position = ccp(bush.position.x + bush.contentSize.width * 4, bush.position.y)
+            }
+        }
+        
+        
+        //loop birds OK
+        for bird in birds {
+            let birdWorldPosition = backNode.convertToWorldSpace(bird.position)
+            let birdScreenPosition = convertToNodeSpace(birdWorldPosition)
+            if birdScreenPosition.x <= (-bird.contentSize.width*2) {
+                bird.position = ccp(bird.position.x + bird.contentSize.width * 4, bird.position.y)
+            }
+        }
+        
+    }
+    
+    
+    func attackButton() {
+        if character.isAttacking == true { return }
+        
+        character.animationManager.runAnimationsForSequenceNamed("attack")
+        character.isAttacking = true
+        
+    }
+    
+    
+    //func spawnNewObstacle() {
+    func spawnNewObstacle() {
+        var prevObstaclePos = firstObstaclePosition
+        
+        if obstacles.count > 0 {
+            prevObstaclePos = obstacles.last!.position.x
+        }
+        
+        // create and add a new obstacle
+        let obstacle = CCBReader.load("Obstacle") as! Obstacle
+        obstacle.position = ccp(prevObstaclePos + distanceBetweenObstacles, 96)
+        println("Obstacle: \(obstacle.position)")
+        gamePhysicsNode.addChild(obstacle)
+        obstacles.append(obstacle)
+    }
+    
+    
+    // implementing collision
+    func ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, character: CCNode!, level: CCNode!) -> ObjCBool {
+        println("TODO: handle Game Over")
+        //restartButton.visible = true;
+        return true
+    }
+    
+    
+    //trigger game over
+    func triggerGameOver() {
+        if (gameOver == false) {
+            gameOver = true
+            scrollSpeed = 0
+            //restartButton.visible = true
+            
+            // just in case
+            character.stopAllActions()
+            
+            let gameplayScene = CCBReader.loadAsScene("EndGame")
+            CCDirector.sharedDirector().presentScene(gameplayScene)
+        }
+    }
+    
+    func retry() {
+        
+        let gameplayScene = CCBReader.loadAsScene("MainScene")
+        CCDirector.sharedDirector().presentScene(gameplayScene)
+        
+    }
+    
+    
+    
+}
